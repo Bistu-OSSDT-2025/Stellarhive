@@ -13,6 +13,11 @@ class User(UserMixin, db.Model):
     score = db.Column(db.Integer, default=0)  # 积分，默认为0
     nickname = db.Column(db.String(64), default='')  # 昵称
     bio = db.Column(db.String(256), default='')      # 个人简介
+    avatar_enabled = db.Column(db.Boolean, default=False)  # 是否启用自定义头像
+    avatar_filename = db.Column(db.String(128), default='')  # 头像文件名
+    nickname_color = db.Column(db.String(16), default='')
+    nickname_font = db.Column(db.String(32), default='')
+    avatar_frame = db.Column(db.String(16), default='')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

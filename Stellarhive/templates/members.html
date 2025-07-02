@@ -11,6 +11,7 @@
       <table class="table table-striped align-middle" id="memberTable">
         <thead class="table-light">
           <tr>
+            <th>头像</th>
             <th>昵称</th>
             <th>用户名</th>
             <th>身份</th>
@@ -21,6 +22,17 @@
         <tbody>
             {% for user in users %}
             <tr>
+              <td>
+                {% if user.avatar_filename %}
+                  <img src="/avatar/{{ user.avatar_filename }}" alt="头像" 
+                       style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                {% else %}
+                  <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                              display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">
+                    {{ user.username[0].upper() }}
+                  </div>
+                {% endif %}
+              </td>
               <td>{{ user.nickname or user.username }}</td>
               <td>{{ user.username }}</td>
               <td>{{ user.role }}</td>
@@ -47,9 +59,9 @@ const memberSearch = document.getElementById('memberSearch');
 memberSearch.addEventListener('input', function() {
   const value = this.value.toLowerCase();
   document.querySelectorAll('#memberTable tbody tr').forEach(row => {
-    const nickname = row.children[0].innerText.toLowerCase();
-    const username = row.children[1].innerText.toLowerCase();
-    const role = row.children[2].innerText.toLowerCase();
+    const nickname = row.children[1].innerText.toLowerCase();
+    const username = row.children[2].innerText.toLowerCase();
+    const role = row.children[3].innerText.toLowerCase();
     row.style.display = nickname.includes(value) || username.includes(value) || role.includes(value) ? '' : 'none';
   });
 });

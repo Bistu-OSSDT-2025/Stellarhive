@@ -40,7 +40,11 @@
       {% if current_user.is_authenticated %}
       <div class="user-profile glass-card">
         <a href="/profile/{{ current_user.id }}" class="d-flex align-items-center text-decoration-none">
-          <i class="fas fa-user-circle fa-2x me-2"></i>
+          {% if current_user.avatar_filename %}
+            <img id="navbar-avatar" src="/avatar/{{ current_user.avatar_filename }}?t={{ range(100000)|random }}" alt="头像" width="38" height="38" style="border-radius:50%;object-fit:cover;margin-right:10px;">
+          {% else %}
+            <i class="fas fa-user-circle fa-2x me-2"></i>
+          {% endif %}
           <div class="user-info">
             <div class="username">{{ current_user.nickname or current_user.username }}</div>
             <div class="user-score"><i class="fas fa-star"></i> <span id="user-score">{{ current_user.score }}</span></div>

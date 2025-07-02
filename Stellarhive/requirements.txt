@@ -2,4 +2,5 @@ Flask
 Flask-Login
 Flask-WTF
 Flask-SQLAlchemy
-Werkzeug 
+Werkzeug
+Pillow 

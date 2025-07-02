@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, MultipleFileField
+from wtforms import StringField, PasswordField, SubmitField, MultipleFileField, FileField
 from wtforms.validators import DataRequired, Length
 
 class LoginForm(FlaskForm):
@@ -21,3 +21,7 @@ class EditProfileForm(FlaskForm):
     nickname = StringField('昵称', validators=[Length(0, 64)])
     bio = StringField('个人简介', validators=[Length(0, 256)])
     submit = SubmitField('保存修改')
+
+class AvatarUploadForm(FlaskForm):
+    avatar = FileField('选择头像图片', validators=[DataRequired()])
+    submit = SubmitField('上传头像')

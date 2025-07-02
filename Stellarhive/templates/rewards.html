@@ -22,10 +22,19 @@
   <div class="d-flex flex-lg-row flex-column align-items-start" style="gap:2rem;">
     <div class="flex-grow-1" style="min-width:0;">
       <div class="reward-section mb-4">
-        <h4 class="section-title"><i class="fas fa-gift me-2"></i>可领取奖励！你已经获得了足够多的积分，可以领取人生格言！<span style="font-size:16px;color:#FFD700;text-shadow:0 0 6px #000;">（每次消耗50积分）</span></h4>
+        <h4 class="section-title"><i class="fas fa-user-circle me-2"></i>自定义头像功能<span style="font-size:16px;color:#FFD700;text-shadow:0 0 6px #000;">（需要100积分解锁）</span></h4>
         <div class="d-flex flex-column flex-md-row align-items-center gap-3">
-          <textarea id="mottoBox" readonly style="width:100%;height:80px;font-size:20px;font-weight:bold;text-align:center;background:rgba(255,255,255,0.8);border:none;resize:none;margin-bottom:10px;color:transparent;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-image:linear-gradient(90deg,#111,#FFD700 60%,#fff 100%);box-shadow:0 0 8px #FFD700;">{{ motto }}</textarea>
-          <button id="genMottoBtn" class="btn btn-warning" style="font-weight:bold;box-shadow:0 0 8px #FFD700;">生成格言</button>
+          {% if current_user.avatar_enabled %}
+            <div class="text-center">
+              <p class="text-success mb-2"><i class="fas fa-check-circle"></i> 您已解锁自定义头像功能！</p>
+              <a href="/upload_avatar" class="btn btn-primary">上传头像</a>
+            </div>
+          {% else %}
+            <div class="text-center">
+              <p class="text-muted mb-2">解锁后可上传自己的头像图片，系统会自动裁剪成圆形</p>
+              <button id="unlockAvatarBtn" class="btn btn-warning" style="font-weight:bold;box-shadow:0 0 8px #FFD700;">解锁自定义头像</button>
+            </div>
+          {% endif %}
         </div>
       </div>
       <div class="reward-record-bg mb-4">
@@ -241,23 +250,6 @@
 </style>
 
 <script>
-const mottoList = [
-    '人生如逆旅，我亦是行人。',
-    '星光不问赶路人，时光不负有心人。',
-    '不积跬步，无以至千里。',
-    '既然选择了远方，便只顾风雨兼程。',
-    '路漫漫其修远兮，吾将上下而求索。',
-    '千里之行，始于足下。',
-    '心有猛虎，细嗅蔷薇。',
-    '生活明朗，万物可爱。',
-    '你要悄悄拔尖，然后惊艳所有人。',
-    '所有的光芒，都需要时间才能被看到。'
-];
-
-function randomMotto() {
-    return mottoList[Math.floor(Math.random() * mottoList.length)];
-}
-
 function refreshScore() {
     fetch('/get_score').then(r=>r.json()).then(d=>{
         if(d.score!==undefined){
@@ -267,11 +259,15 @@ function refreshScore() {
     }).catch(e=>{alert('积分刷新失败:'+e);});
 }
 
-document.getElementById('genMottoBtn').onclick = function() {
-    fetch('/consume_score', {
+document.getElementById('unlockAvatarBtn').onclick = function() {
+    if (!confirm('确定要消耗100积分解锁自定义头像功能吗？')) {
+        return;
+    }
+    
+    fetch('/unlock_avatar', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({amount: 50})
+        body: JSON.stringify({})
     }).then(r => {
         if (!r.ok) {
             if (r.status === 401) {
@@ -288,9 +284,10 @@ document.getElementById('genMottoBtn').onclick = function() {
             alert(d.msg||'积分不足！');
             return;
         }
-        // 生成格言
-        document.getElementById('mottoBox').value = randomMotto();
+        alert(d.msg);
         refreshScore();
+        // 刷新页面显示解锁状态
+        window.location.reload();
     }).catch(e=>{if(e)alert('请求失败:'+e);});
 };
 </script>

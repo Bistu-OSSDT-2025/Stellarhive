@@ -1,13 +1,15 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, send_from_directory, Response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, File, Reward, TaskLog
-from forms import LoginForm, RegisterForm, UploadForm
+from forms import LoginForm, RegisterForm, UploadForm, AvatarUploadForm
 from flask_wtf.csrf import CSRFProtect
 import os, json, datetime, random
 from io import BytesIO
 from werkzeug.exceptions import RequestEntityTooLarge
 from forms import EditProfileForm
 from functools import wraps
+from PIL import Image
+import uuid
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,6 +18,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stellarhive-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'stellarhive.db')
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads')
+app.config['AVATAR_FOLDER'] = os.path.join(basedir, 'avatars')
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB
 app.config['WTF_CSRF_SECRET_KEY'] = 'stellarhive-csrf-secret-key'
 app.config['WTF_CSRF_ENABLED'] = True
@@ -26,6 +29,9 @@ csrf.init_app(app)
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+if not os.path.exists(app.config['AVATAR_FOLDER']):
+    os.makedirs(app.config['AVATAR_FOLDER'])
 
 db.init_app(app)
 login_manager = LoginManager()
@@ -414,6 +420,133 @@ def consume_score():
     current_user.score -= amount
     db.session.commit()
     return jsonify({'ok': True, 'score': current_user.score})
+
+@app.route('/unlock_avatar', methods=['POST'])
+@login_required
+@csrf_exempt
+def unlock_avatar():
+    """解锁自定义头像权限"""
+    if current_user.score < 100:
+        return jsonify({'ok': False, 'msg': '积分不足！需要100积分解锁自定义头像功能', 'score': current_user.score})
+    
+    current_user.score -= 100
+    current_user.avatar_enabled = True
+    db.session.commit()
+    TaskLog.log_task(current_user.id, 'unlock_avatar', 100)
+    return jsonify({'ok': True, 'msg': '成功解锁自定义头像功能！', 'score': current_user.score})
+
+@app.route('/upload_avatar', methods=['GET', 'POST'])
+@login_required
+def upload_avatar():
+    """上传头像"""
+    if not current_user.avatar_enabled:
+        flash('您还没有解锁自定义头像功能，需要100积分解锁')
+        return redirect(url_for('rewards'))
+    
+    form = AvatarUploadForm()
+    if form.validate_on_submit():
+        file = form.avatar.data
+        if file:
+            # 生成唯一文件名
+            filename = f"avatar_{current_user.id}_{uuid.uuid4().hex[:8]}.png"
+            filepath = os.path.join(app.config['AVATAR_FOLDER'], filename)
+            
+            try:
+                # 打开图片
+                img = Image.open(file.stream)
+                
+                # 转换为RGB模式
+                if img.mode in ('RGBA', 'LA'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # 调整尺寸为正方形
+                size = (200, 200)
+                # 计算裁剪区域，保持比例
+                width, height = img.size
+                if width > height:
+                    left = (width - height) // 2
+                    img = img.crop((left, 0, left + height, height))
+                elif height > width:
+                    top = (height - width) // 2
+                    img = img.crop((0, top, width, top + width))
+                
+                # 调整到目标尺寸
+                img = img.resize(size, Image.Resampling.LANCZOS)
+                
+                # 保存为PNG格式
+                img.save(filepath, 'PNG')
+                
+                # 更新用户头像信息
+                current_user.avatar_filename = filename
+                db.session.commit()
+                
+                flash('头像上传成功！')
+                return redirect(url_for('profile', user_id=current_user.id))
+                
+            except Exception as e:
+                flash(f'头像上传失败：{str(e)}')
+                return redirect(url_for('upload_avatar'))
+    
+    return render_template('upload_avatar.html', form=form)
+
+@app.route('/avatar/<filename>')
+def avatar(filename):
+    """提供头像文件访问"""
+    return send_from_directory(app.config['AVATAR_FOLDER'], filename)
+
+@app.route('/remove_avatar', methods=['POST'])
+@login_required
+@csrf_exempt
+def remove_avatar():
+    """删除头像"""
+    if current_user.avatar_filename:
+        # 删除文件
+        filepath = os.path.join(app.config['AVATAR_FOLDER'], current_user.avatar_filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        # 清除数据库记录
+        current_user.avatar_filename = ''
+        db.session.commit()
+        flash('头像已删除')
+    
+    return redirect(url_for('profile', user_id=current_user.id))
+
+@app.route('/shop')
+@login_required
+def shop():
+    return render_template('shop.html')
+
+@app.route('/exchange', methods=['POST'])
+@login_required
+@csrf_exempt
+def exchange():
+    data = request.get_json()
+    type_ = data.get('type')
+    value = data.get('value')
+    cost = int(data.get('cost', 0))
+    if current_user.score < cost:
+        return jsonify({'ok': False, 'msg': '积分不足！'})
+    # 头像框
+    if type_ == 'avatar_frame':
+        current_user.score -= cost
+        current_user.avatar_frame = value  # 你需要在User模型加avatar_frame字段
+    # 昵称颜色
+    elif type_ == 'nickname_color':
+        current_user.score -= cost
+        current_user.nickname_color = value  # 你需要在User模型加nickname_color字段
+    # 昵称字体
+    elif type_ == 'nickname_font':
+        current_user.score -= cost
+        current_user.nickname_font = value  # 你需要在User模型加nickname_font字段
+    else:
+        return jsonify({'ok': False, 'msg': '类型错误'})
+    db.session.commit()
+    return jsonify({'ok': True})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True) 

@@ -1,15 +1,61 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="card p-4 mb-4" style="max-width:600px;margin:auto;">
-  <h2 class="mb-3">{{ user.nickname or user.username }} 的主页</h2>
+  <div class="text-center mb-4">
+    {% if user.avatar_filename %}
+      <img src="/avatar/{{ user.avatar_filename }}" alt="用户头像" 
+           style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #007bff; object-fit: cover; margin-bottom: 15px;">
+    {% else %}
+      <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                  display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 48px; font-weight: bold;">
+        {{ user.username[0].upper() }}
+      </div>
+    {% endif %}
+    <h2 class="mb-2">{{ user.nickname or user.username }} 的主页</h2>
+    {% if current_user.id == user.id and user.avatar_enabled %}
+      <a href="/upload_avatar" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-camera"></i> 更换头像
+      </a>
+    {% endif %}
+  </div>
+  
   <ul class="list-group mb-3">
     <li class="list-group-item"><b>用户名：</b>{{ user.username }}</li>
     <li class="list-group-item"><b>身份：</b>{{ user.role }}</li>
     <li class="list-group-item"><b>积分：</b>{{ user.score }}</li>
     <li class="list-group-item"><b>简介：</b>{{ user.bio or '暂无简介' }}</li>
+    {% if user.avatar_enabled %}
+      <li class="list-group-item text-success"><b>自定义头像：</b><i class="fas fa-check-circle"></i> 已解锁</li>
+    {% else %}
+      <li class="list-group-item text-muted"><b>自定义头像：</b><i class="fas fa-lock"></i> 未解锁（需要100积分）</li>
+    {% endif %}
   </ul>
+  
   {% if current_user.id == user.id %}
-    <a class="btn btn-primary" href="/edit_profile">编辑我的主页</a>
+    <div class="d-grid gap-2">
+      <a class="btn btn-primary" href="/edit_profile">编辑我的主页</a>
+      {% if not user.avatar_enabled %}
+        <a class="btn btn-warning" href="/rewards">前往奖励中心解锁头像功能</a>
+      {% endif %}
+    </div>
   {% endif %}
 </div>
+
+<style>
+.card {
+  border-radius: 15px;
+  box-shadow: 0 4px 24px rgba(45,127,249,0.08);
+}
+
+.list-group-item {
+  border-radius: 8px;
+  margin-bottom: 5px;
+  border: 1px solid #e9ecef;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+</style>
 {% endblock %}

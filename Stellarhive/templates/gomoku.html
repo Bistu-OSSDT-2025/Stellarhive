@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
+
 .gomoku-cosmos-bg {
   background: radial-gradient(ellipse at 60% 40%, #232946 60%, #1a1a2e 100%);
   border-radius: 32px;
@@ -77,9 +78,14 @@
   font-weight: bold;
   box-shadow: 0 2px 8px #e27a9b33;
   transition: background 0.2s;
+  filter: grayscale(1);
+  opacity: 0.7;
+  transition: filter 0.2s, opacity 0.2s;
 }
 .gomoku-ai-mode-btn.active {
   background: linear-gradient(90deg,#e27a9b 0%,#40a9ff 100%);
+  filter: grayscale(0);
+  opacity: 1;
 }
 </style>
 <div class="container py-5 gomoku-cosmos-bg">
@@ -127,7 +133,8 @@
         <span id="gomoku-status" class="gomoku-status"></span>
       </div>
       <div class="text-center mt-3">
-        <button class="btn btn-primary" onclick="resetGomoku()">重新开始</button>
+        <button class="btn btn-primary" onclick="resetTicTacToe()">重新开始</button>
+        <a class="btn btn-primary" href="/rewards" style="margin-left:10px;">返回奖励中心</a>
       </div>
     </div>
   </div>
@@ -142,6 +149,8 @@ function setGomokuAIMode(mode) {
   gomokuAIMode = mode;
   document.getElementById('gomoku-mode-simple').classList.toggle('active', mode==='simple');
   document.getElementById('gomoku-mode-hard').classList.toggle('active', mode==='hard');
+  let msg = mode === 'simple' ? '您现在游玩的是简单模式' : '您现在游玩的是困难模式';
+  alert(msg);
   resetGomoku();
 }
 function renderGomokuBoard() {

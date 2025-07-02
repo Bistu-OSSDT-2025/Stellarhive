@@ -103,6 +103,12 @@
   <div class="row justify-content-center" style="position:relative;z-index:1;">
     <div class="col-md-12 d-flex flex-column align-items-center">
       <h3 class="text-center mb-4" style="color:#e0e6f6;font-weight:700;letter-spacing:2px;">连连看</h3>
+      <div class="alert alert-info" style="max-width:600px;margin:0 auto 20px;">
+        <b>【游戏规则】</b><br>
+        点击两个相同的图案，若它们之间可以通过不超过两次转折的直线连接且路径不被其他图案阻挡，则可以消除。<br>
+        清空全部图案即为胜利。<br>
+        <span style="color:#888;">提示：可以多尝试不同的组合，善用重排和刷新！</span>
+      </div>
       <div style="position:relative;">
         <svg id="star-link-svg" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:10;"></svg>
         <div id="link-game-board" class="link-cosmos-board"></div>
@@ -111,7 +117,8 @@
         <span id="link-game-status" style="color:#fff;font-weight:600;font-size:1.1rem;"></span>
       </div>
       <div class="text-center mt-3">
-        <button class="btn restart-btn" onclick="resetLinkGame()">重新开始</button>
+        <button class="btn btn-primary" onclick="resetTicTacToe()">重新开始</button>
+        <a class="btn btn-primary" href="/rewards" style="margin-left:10px;">返回奖励中心</a>
       </div>
     </div>
   </div>
