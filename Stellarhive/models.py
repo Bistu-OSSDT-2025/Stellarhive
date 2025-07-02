@@ -50,4 +50,42 @@ class TaskLog(db.Model):
     def log_task(user_id, task, amount=0):
         log = TaskLog(user_id=user_id, task=task, amount=amount, date=datetime.date.today())
         db.session.add(log)
-        db.session.commit() 
+        db.session.commit()
+
+class ForumCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    description = db.Column(db.String(256))
+    posts = db.relationship('ForumPost', backref='category', lazy='dynamic',
+                          order_by='desc(ForumPost.created_time)')
+
+class ForumPost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(128), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('forum_category.id'), nullable=False)
+    views = db.Column(db.Integer, default=0)
+    author = db.relationship('User', backref=db.backref('posts', lazy='dynamic'))
+    comments = db.relationship('ForumComment', backref='post', lazy='dynamic')
+
+class ForumComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    created_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_post.id'), nullable=False)
+    author = db.relationship('User', backref=db.backref('comments', lazy='dynamic'))
+
+class ForumLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_post.id'), nullable=False)
+    created_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('likes', lazy='dynamic'))
+    post = db.relationship('ForumPost', backref=db.backref('likes', lazy='dynamic'))
+
+    # 确保每个用户只能给同一个帖子点赞一次
+    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='unique_user_post_like'),) 

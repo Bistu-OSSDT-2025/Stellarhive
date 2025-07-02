@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, send_from_directory, Response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from models import db, User, File, Reward, TaskLog
-from forms import LoginForm, RegisterForm, UploadForm, AvatarUploadForm
+from models import db, User, File, Reward, TaskLog, ForumCategory, ForumPost, ForumComment, ForumLike
+from forms import LoginForm, RegisterForm, UploadForm, AvatarUploadForm, ForumPostForm, ForumCommentForm
 from flask_wtf.csrf import CSRFProtect
 import os, json, datetime, random
 from io import BytesIO
@@ -67,6 +67,18 @@ def create_tables():
             admin.role = 'admin'
             admin.set_password('12345')
             db.session.add(admin)
+            db.session.commit()
+        # 创建默认论坛分类
+        if ForumCategory.query.count() == 0:
+            categories = [
+                {'name': '公告通知', 'description': '重要公告和通知'},
+                {'name': '技术讨论', 'description': '分享和讨论技术问题'},
+                {'name': '资源分享', 'description': '分享有价值的学习资源'},
+                {'name': '问题求助', 'description': '寻求帮助和解答'},
+                {'name': '闲聊灌水', 'description': '轻松话题讨论区'}
+            ]
+            for category in categories:
+                db.session.add(ForumCategory(**category))
             db.session.commit()
         setattr(app, '_tables_created', True)
 
@@ -547,6 +559,198 @@ def exchange():
         return jsonify({'ok': False, 'msg': '类型错误'})
     db.session.commit()
     return jsonify({'ok': True})
+
+@app.route('/forum')
+@login_required
+def forum():
+    categories = ForumCategory.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # 获取筛选参数
+    category_id = request.args.get('category_id', type=int)
+    sort_by = request.args.get('sort', 'newest')  # newest, popular, no_reply
+    
+    # 构建查询
+    query = ForumPost.query
+    
+    # 如果指定了分类，则筛选
+    if category_id:
+        query = query.filter_by(category_id=category_id)
+    
+    # 排序
+    if sort_by == 'popular':
+        query = query.order_by(ForumPost.views.desc())
+    elif sort_by == 'no_reply':
+        query = query.outerjoin(ForumComment).group_by(ForumPost.id).having(db.func.count(ForumComment.id) == 0)
+    else:  # newest
+        query = query.order_by(ForumPost.created_time.desc())
+    
+    # 分页
+    posts = query.paginate(page=page, per_page=per_page)
+    
+    return render_template('forum.html', 
+                         categories=categories, 
+                         posts=posts,
+                         current_category_id=category_id,
+                         sort_by=sort_by)
+
+@app.route('/forum/category/<int:category_id>')
+@login_required
+def forum_category(category_id):
+    category = ForumCategory.query.get_or_404(category_id)
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    posts = ForumPost.query.filter_by(category_id=category_id).order_by(ForumPost.created_time.desc()).paginate(page=page, per_page=per_page)
+    return render_template('forum_category.html', category=category, posts=posts, ForumPost=ForumPost)
+
+@app.route('/forum/post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def forum_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    form = ForumCommentForm()
+    
+    # 增加浏览量
+    post.views += 1
+    db.session.commit()
+    
+    if form.validate_on_submit() and current_user.is_authenticated:
+        comment = ForumComment()
+        comment.content = form.content.data
+        comment.author_id = current_user.id
+        comment.post_id = post.id
+        db.session.add(comment)
+        db.session.commit()
+        flash('评论发布成功！')
+        return redirect(url_for('forum_post', post_id=post_id))
+        
+    comments = post.comments.order_by(ForumComment.created_time.desc()).all()
+    return render_template('forum_post.html', post=post, form=form, comments=comments)
+
+@app.route('/forum/new_post/<int:category_id>', methods=['POST'])
+@login_required
+def forum_new_post(category_id):
+    if not current_user.is_authenticated:
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'error': '请先登录后再发帖'}), 401
+        flash('请先登录后再发帖', 'warning')
+        return redirect(url_for('login'))
+    
+    # 检查Content-Type
+    if request.headers.get('Content-Type') == 'application/json':
+        data = request.get_json()
+        title = data.get('title')
+        content = data.get('content')
+    else:
+        title = request.form.get('title')
+        content = request.form.get('content')
+    
+    if not title or not content:
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'error': '标题和内容不能为空'}), 400
+        flash('标题和内容不能为空', 'warning')
+        return redirect(url_for('forum'))
+    
+    try:
+        category = ForumCategory.query.get_or_404(category_id)
+        
+        # 创建新帖子
+        post = ForumPost()
+        post.title = title
+        post.content = content
+        post.author_id = current_user.id
+        post.category_id = category.id
+        
+        db.session.add(post)
+        db.session.commit()
+        
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({
+                'success': True,
+                'redirect': url_for('forum_post', post_id=post.id),
+                'message': '发帖成功！'
+            })
+            
+        flash('发帖成功！', 'success')
+        return redirect(url_for('forum_post', post_id=post.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'error': str(e) or '发帖失败，请重试'}), 500
+        flash('发帖失败，请重试', 'error')
+        return redirect(url_for('forum'))
+
+@app.route('/forum/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    if post.author_id != current_user.id and current_user.role != 'admin':
+        flash('你没有权限编辑这个帖子', 'error')
+        return redirect(url_for('forum_post', post_id=post_id))
+    
+    form = ForumPostForm(obj=post)
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.content = form.content.data
+        db.session.commit()
+        flash('帖子已更新', 'success')
+        return redirect(url_for('forum_post', post_id=post_id))
+    
+    return render_template('forum_edit_post.html', form=form, post=post)
+
+@app.route('/forum/delete_post/<int:post_id>', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    if post.author_id != current_user.id and current_user.role != 'admin':
+        flash('你没有权限删除这个帖子', 'error')
+        return redirect(url_for('forum_post', post_id=post_id))
+    
+    category_id = post.category_id
+    db.session.delete(post)
+    db.session.commit()
+    flash('帖子已删除', 'success')
+    return redirect(url_for('forum_category', category_id=category_id))
+
+@app.route('/forum/delete_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = ForumComment.query.get_or_404(comment_id)
+    if comment.author_id != current_user.id and current_user.role != 'admin':
+        flash('你没有权限删除这个评论', 'error')
+        return redirect(url_for('forum_post', post_id=comment.post_id))
+    
+    post_id = comment.post_id
+    db.session.delete(comment)
+    db.session.commit()
+    flash('评论已删除', 'success')
+    return redirect(url_for('forum_post', post_id=post_id))
+
+@app.route('/forum/like/<int:post_id>', methods=['POST'])
+@login_required
+@csrf_exempt
+def toggle_like(post_id):
+    if not current_user.is_authenticated:
+        return jsonify({'error': '请先登录'}), 401
+        
+    post = ForumPost.query.get_or_404(post_id)
+    like = ForumLike.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    
+    if like:
+        db.session.delete(like)
+        action = 'unliked'
+    else:
+        like = ForumLike(user_id=current_user.id, post_id=post_id)
+        db.session.add(like)
+        action = 'liked'
+    
+    db.session.commit()
+    return jsonify({
+        'ok': True,
+        'action': action,
+        'likes': post.likes.count()
+    })
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True) 

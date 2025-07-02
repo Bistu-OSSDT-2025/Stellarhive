@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, MultipleFileField, FileField
-from wtforms.validators import DataRequired, Length
+from wtforms import StringField, PasswordField, SubmitField, MultipleFileField, FileField, TextAreaField
+from wtforms.validators import DataRequired, Length, EqualTo
 
 class LoginForm(FlaskForm):
     username = StringField('用户名', validators=[DataRequired(), Length(1, 64)])
@@ -25,3 +25,12 @@ class EditProfileForm(FlaskForm):
 class AvatarUploadForm(FlaskForm):
     avatar = FileField('选择头像图片', validators=[DataRequired()])
     submit = SubmitField('上传头像')
+
+class ForumPostForm(FlaskForm):
+    title = StringField('标题', validators=[DataRequired(), Length(min=1, max=128)])
+    content = TextAreaField('内容', validators=[DataRequired()])
+    submit = SubmitField('发布')
+
+class ForumCommentForm(FlaskForm):
+    content = TextAreaField('评论', validators=[DataRequired()])
+    submit = SubmitField('提交')

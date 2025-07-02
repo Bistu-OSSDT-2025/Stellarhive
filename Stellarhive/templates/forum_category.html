@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('forum') }}" class="text-decoration-none">论坛</a></li>
+            <li class="breadcrumb-item active">{{ category.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="category-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="category-info">
+                <h1 class="category-title">{{ category.name }}</h1>
+                <p class="category-description text-muted mb-0">{{ category.description }}</p>
+            </div>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('new_post', category_id=category.id) }}" class="btn btn-primary new-post-btn">
+                <i class="fas fa-pen me-1"></i> 发布新帖
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="post-filters mb-4">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active">最新</button>
+            <button type="button" class="btn btn-outline-primary">热门</button>
+            <button type="button" class="btn btn-outline-primary">精华</button>
+        </div>
+    </div>
+
+    <div class="post-list">
+        {% for post in posts.items %}
+        <div class="post-card">
+            <div class="post-meta">
+                <div class="author-avatar">
+                    {% if post.author.avatar_filename %}
+                    <img src="/avatar/{{ post.author.avatar_filename }}" alt="头像">
+                    {% else %}
+                    <i class="fas fa-user-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="post-info">
+                    <h2 class="post-title">
+                        <a href="{{ url_for('forum_post', post_id=post.id) }}" class="text-decoration-none">{{ post.title }}</a>
+                    </h2>
+                    <div class="post-meta-info">
+                        <span class="author-name">{{ post.author.username }}</span>
+                        <span class="post-time">{{ post.created_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                        {% if post.updated_time != post.created_time %}
+                        <span class="post-edited">(已编辑)</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="post-stats">
+                <div class="stat-item">
+                    <i class="fas fa-comment"></i>
+                    <span>{{ post.comments.count() }}</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-eye"></i>
+                    <span>{{ post.views }}</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-heart"></i>
+                    <span>{{ post.likes.count() }}</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h3>暂无帖子</h3>
+            <p>来发布第一个帖子吧！</p>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('new_post', category_id=category.id) }}" class="btn btn-primary">
+                <i class="fas fa-pen me-1"></i> 发布新帖
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if posts.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if posts.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('forum_category', category_id=category.id, page=posts.prev_num) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for page_num in range(max(1, posts.page - 2), min(posts.pages + 1, posts.page + 3)) %}
+            <li class="page-item {% if page_num == posts.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('forum_category', category_id=category.id, page=page_num) }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if posts.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('forum_category', category_id=category.id, page=posts.next_num) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+.category-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.category-description {
+    font-size: 1rem;
+    color: #64748b;
+}
+
+.new-post-btn {
+    padding: 0.5rem 1.25rem;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.post-filters {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1rem;
+}
+
+.post-filters .btn-group .btn {
+    padding: 0.375rem 1rem;
+    font-weight: 500;
+}
+
+.post-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.post-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.author-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.author-avatar i {
+    font-size: 24px;
+    color: #94a3b8;
+}
+
+.post-info {
+    flex: 1;
+}
+
+.post-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.4;
+}
+
+.post-title a {
+    color: #1a202c;
+}
+
+.post-title a:hover {
+    color: #3b82f6;
+}
+
+.post-meta-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.author-name {
+    font-weight: 500;
+    color: #4b5563;
+}
+
+.post-edited {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.post-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.stat-item i {
+    font-size: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: #1a202c;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+
+.pagination {
+    gap: 0.25rem;
+}
+
+.pagination .page-link {
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    color: #4b5563;
+    border: none;
+    font-weight: 500;
+}
+
+.pagination .page-item.active .page-link {
+    background: #3b82f6;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .post-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .post-stats {
+        width: 100%;
+        justify-content: space-around;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .post-meta-info {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+</style>
+{% endblock %} 
