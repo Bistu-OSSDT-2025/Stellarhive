@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>学习技术博客</h2>
+<div class="card mb-3">
+  <div class="card-body">
+    <h4 class="card-title">{{ blog.title }}</h4>
+    <a class="btn btn-primary" href="{{ blog.url }}" target="_blank">前往阅读</a>
+  </div>
+</div>
+<div id="timer" class="alert alert-info">请认真阅读，<span id="count">30</span>秒后可领取奖励</div>
+<form id="rewardForm" method="post" style="display:none;">
+  <button class="btn btn-success">领取奖励（+10分）</button>
+</form>
+<script>
+let count = 30;
+let timer = setInterval(function() {
+  count--;
+  document.getElementById('count').innerText = count;
+  if(count <= 0) {
+    clearInterval(timer);
+    document.getElementById('timer').style.display = 'none';
+    document.getElementById('rewardForm').submit();
+  }
+}, 1000);
+</script>
+{% endblock %} 
