@@ -11,6 +11,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Pacifico|Lobster|Indie+Flower|ZCOOL+KuaiLe|ZCOOL+QingKe+HuangYou|Ma+Shan+Zheng&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -42,13 +43,33 @@
                 {% if current_user.is_authenticated %}
                 <div class="user-profile glass-card">
                     <a href="/profile/{{ current_user.id }}" class="d-flex align-items-center text-decoration-none">
-                        {% if current_user.avatar_filename %}
-                            <img id="navbar-avatar" src="/avatar/{{ current_user.avatar_filename }}?t={{ range(100000)|random }}" alt="头像" width="38" height="38" style="border-radius:50%;object-fit:cover;margin-right:10px;">
-                        {% else %}
-                            <i class="fas fa-user-circle fa-2x me-2"></i>
-                        {% endif %}
+                        <div style="display:inline-block; position:relative; width:40px; height:40px; margin-right:10px;">
+                          {% if current_user.avatar_filename %}
+                            <img id="navbar-avatar" src="/avatar/{{ current_user.avatar_filename }}?t={{ range(100000)|random }}" alt="头像" width="34" height="34" style="border-radius:50%;object-fit:cover;display:block;position:absolute;left:3px;top:3px;width:34px;height:34px;z-index:1;">
+                            {% if current_user.avatar_frame %}
+                              <img src="/static/avatars/frames/{{ current_user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                            {% endif %}
+                          {% else %}
+                            <i class="fas fa-user-circle fa-2x" style="width:34px;height:34px;line-height:34px;display:inline-block;color:#94a3b8;position:absolute;left:3px;top:3px;z-index:1;"></i>
+                            {% if current_user.avatar_frame %}
+                              <img src="/static/avatars/frames/{{ current_user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                            {% endif %}
+                          {% endif %}
+                        </div>
                         <div class="user-info">
-                            <div class="username">{{ current_user.nickname or current_user.username }}</div>
+                            {% set is_gradient = current_user.nickname_color and 'linear-gradient' in current_user.nickname_color %}
+                            <div class="username"
+                                 style="font-family:{{ current_user.nickname_font }};
+                                   {% if is_gradient %}
+                                     background:{{ current_user.nickname_color }};
+                                     -webkit-background-clip:text;
+                                     -webkit-text-fill-color:transparent;
+                                   {% else %}
+                                     color:{{ current_user.nickname_color }};
+                                   {% endif %}
+                                 ">
+                              {{ current_user.nickname or current_user.username }}
+                            </div>
                             <div class="user-score"><i class="fas fa-star"></i> <span id="user-score">{{ current_user.score }}</span></div>
                         </div>
                     </a>
@@ -102,6 +123,17 @@
                 gsap.to(link, {duration: 0.3, scale: 1, ease: 'power2.out'});
             });
         });
+        // Flash自动消失
+        setTimeout(function() {
+            document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
+                // Bootstrap 5 fade out
+                alert.classList.remove('show');
+                alert.classList.add('fade');
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            });
+        }, 3000);
     });
     </script>
     <!-- 自定义 JavaScript -->

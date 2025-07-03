@@ -11,6 +11,7 @@
       <td>{{ user.score }}</td>
       <td>
         <form method="post" style="display:inline;">
+          {{ csrf_token() }}
           <input type="hidden" name="user_id" value="{{ user.id }}">
           <button class="btn btn-success btn-sm" name="action" value="add">+10分</button>
           <button class="btn btn-danger btn-sm" name="action" value="sub">-10分</button>

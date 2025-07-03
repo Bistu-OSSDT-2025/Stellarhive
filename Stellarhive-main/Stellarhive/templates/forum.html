@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="forum-container">
+  <!-- 左侧边栏 -->
+  <aside class="forum-sidebar">
+    <ul>
+      <li><a href="{{ url_for('forum_following') }}" data-icon="\f005">关注</a></li>
+      <li><a href="{{ url_for('forum_subscribed') }}" data-icon="\f02e">订阅</a></li>
+      <li><a href="{{ url_for('forum_favorites') }}" data-icon="\f02c">收藏</a></li>
+      <li><a href="{{ url_for('forum_history') }}" data-icon="\f1da">历史</a></li>
+    </ul>
+  </aside>
+  <!-- 主体内容 -->
+  <main class="forum-main">
+    <!-- 顶部导航/推荐/筛选 -->
+    <div class="forum-topbar" style="justify-content: space-between; align-items: center;">
+      <div>
+        <button class="tab-btn {% if sort_by=='newest' %}active{% endif %}" onclick="location.href='{{ url_for('forum', sort='newest') }}'">最新</button>
+        <button class="tab-btn {% if sort_by=='popular' %}active{% endif %}" onclick="location.href='{{ url_for('forum', sort='popular') }}'">热门</button>
+        <button class="tab-btn {% if sort_by=='no_reply' %}active{% endif %}" onclick="location.href='{{ url_for('forum', sort='no_reply') }}'">无回复</button>
+      </div>
+      {% if current_user.is_authenticated and categories|length > 0 %}
+      <a href="{{ url_for('forum_new_post', category_id=categories[0].id) }}" class="forum-post-btn">➕ 发帖</a>
+      {% endif %}
+    </div>
+    <!-- 标签筛选区 -->
+    <div class="forum-tags-scroll">
+      <div class="forum-tags">
+        {% set tag_list = ['前端','后端','移动开发','人工智能','大数据','数据库','数据结构与算法','Python','Java','C','云平台','前沿技术'] %}
+        {% for t in tag_list %}
+          <a href="{{ url_for('forum', tag=t) }}" class="forum-tag {% if tag==t %}active{% endif %}">{{ t }}</a>
+        {% endfor %}
+        {% if tag %}
+          <a href="{{ url_for('forum') }}" class="forum-tag clear">清除筛选</a>
+        {% endif %}
+      </div>
+    </div>
+    <!-- 帖子列表 -->
+    <div class="forum-post-list">
+      {% for post in posts.items %}
+        <a href="{{ url_for('forum_post', post_id=post.id) }}" class="forum-post-card-link">
+          <div class="forum-post-card forum-post-card-has-avatar">
+            <div class="forum-post-avatar">
+              <div style="position:relative;width:40px;height:40px;display:inline-block;">
+                {% if post.author.avatar_filename %}
+                  <img src="/avatar/{{ post.author.avatar_filename }}" alt="头像" class="avatar-large" style="width:36px;height:36px;border-radius:50%;object-fit:cover;position:absolute;left:2px;top:2px;z-index:1;">
+                  {% if post.author.avatar_frame %}
+                    <img src="/static/avatars/frames/{{ post.author.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                  {% endif %}
+                {% else %}
+                  <i class="fas fa-user-circle avatar-large" style="color:#bfc4cc;position:absolute;left:2px;top:2px;z-index:1;font-size:36px;"></i>
+                  {% if post.author.avatar_frame %}
+                    <img src="/static/avatars/frames/{{ post.author.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            <div class="forum-post-main">
+              <div class="forum-post-header">
+                <span class="forum-post-username">{{ post.author.username }}</span>
+              </div>
+              <div class="forum-post-title">{{ post.title }}</div>
+              <div class="forum-post-abstract">{{ post.content[:100] }}...</div>
+              <div class="forum-post-actions">
+                <span><i class="fa-regular fa-eye"></i> {{ post.views }}</span>
+                <span><i class="fa-regular fa-thumbs-up"></i> {{ post.likes.count() if post.likes else 0 }}</span>
+                <span><i class="fa-regular fa-star"></i> {{ post.favorited_by.count() if post.favorited_by else 0 }}</span>
+                <span><i class="fa-regular fa-comment-dots"></i> {{ post.comments.count() }}</span>
+                <span><i class="fa-regular fa-clock"></i> {{ post.created_time|tochina }}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    <!-- 分页 -->
+    <div class="forum-pagination">
+      {% if posts.has_prev %}
+        <a href="{{ url_for('forum', page=posts.prev_num) }}">上一页</a>
+      {% endif %}
+      <span>第{{ posts.page }}/{{ posts.pages }}页</span>
+      {% if posts.has_next %}
+        <a href="{{ url_for('forum', page=posts.next_num) }}">下一页</a>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %} 

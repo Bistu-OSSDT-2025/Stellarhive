@@ -23,15 +23,21 @@
             {% for user in users %}
             <tr>
               <td>
-                {% if user.avatar_filename %}
-                  <img src="/avatar/{{ user.avatar_filename }}" alt="头像" 
-                       style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                {% else %}
-                  <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                              display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">
-                    {{ user.username[0].upper() }}
-                  </div>
-                {% endif %}
+                <div style="position:relative;width:40px;height:40px;display:inline-block;">
+                  {% if user.avatar_filename %}
+                    <img src="/avatar/{{ user.avatar_filename }}" alt="头像" style="width:36px;height:36px;border-radius:50%;object-fit:cover;position:absolute;left:2px;top:2px;z-index:1;">
+                    {% if user.avatar_frame %}
+                      <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                    {% endif %}
+                  {% else %}
+                    <div style="width:36px;height:36px;border-radius:50%;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;position:absolute;left:2px;top:2px;z-index:1;">
+                      {{ user.username[0].upper() }}
+                    </div>
+                    {% if user.avatar_frame %}
+                      <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                    {% endif %}
+                  {% endif %}
+                </div>
               </td>
               <td>{{ user.nickname or user.username }}</td>
               <td>{{ user.username }}</td>
@@ -39,11 +45,12 @@
               <td>{{ user.score }}</td>
               <td>
                 <a class="btn btn-info btn-sm" href="/profile/{{ user.id }}">查看主页</a>
-                {% if current_user.role == 'admin' and user.id != current_user.id %}
+                {% if current_user.role == 'admin' %}
                 <form method="post" style="display:inline;">
+                  {{ form.csrf_token }}
                   <input type="hidden" name="user_id" value="{{ user.id }}">
-                  <button class="btn btn-success btn-sm" name="action" value="add" title="加10分">+10分</button>
-                  <button class="btn btn-danger btn-sm" name="action" value="sub" title="减10分">-10分</button>
+                  <button class="btn btn-success btn-sm" name="action" value="add">+10分</button>
+                  <button class="btn btn-danger btn-sm" name="action" value="sub">-10分</button>
                 </form>
                 {% endif %}
               </td>

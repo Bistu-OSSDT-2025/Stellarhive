@@ -5,6 +5,24 @@ import datetime
 
 db = SQLAlchemy()
 
+# 用户关注关系表
+follows = db.Table('follows',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+# 用户订阅关系表
+subscriptions = db.Table('subscriptions',
+    db.Column('subscriber_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('subscribed_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+# 用户收藏帖子关系表
+favorites = db.Table('favorites',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('post_id', db.Integer, db.ForeignKey('forum_post.id'))
+)
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
@@ -18,6 +36,22 @@ class User(UserMixin, db.Model):
     nickname_color = db.Column(db.String(16), default='')
     nickname_font = db.Column(db.String(32), default='')
     avatar_frame = db.Column(db.String(16), default='')
+    owned_fonts = db.Column(db.Text, default='')  # 已拥有字体，逗号分隔
+    owned_colors = db.Column(db.Text, default='') # 已拥有昵称颜色，逗号分隔
+    owned_frames = db.Column(db.Text, default='') # 已拥有头像框，逗号分隔
+    followed = db.relationship(
+        'User', secondary=follows,
+        primaryjoin=(follows.c.follower_id == id),
+        secondaryjoin=(follows.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+    subscribed = db.relationship(
+        'User', secondary=subscriptions,
+        primaryjoin=(subscriptions.c.subscriber_id == id),
+        secondaryjoin=(subscriptions.c.subscribed_id == id),
+        backref=db.backref('subscribers', lazy='dynamic'), lazy='dynamic')
+    favorite_posts = db.relationship(
+        'ForumPost', secondary=favorites,
+        backref=db.backref('favorited_by', lazy='dynamic'), lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -69,7 +103,8 @@ class ForumPost(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('forum_category.id'), nullable=False)
     views = db.Column(db.Integer, default=0)
     author = db.relationship('User', backref=db.backref('posts', lazy='dynamic'))
-    comments = db.relationship('ForumComment', backref='post', lazy='dynamic')
+    comments = db.relationship('ForumComment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    tags = db.Column(db.String(256), default='')
 
 class ForumComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,15 +1,17 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, send_from_directory, Response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from models import db, User, File, Reward, TaskLog, ForumCategory, ForumPost, ForumComment, ForumLike
-from forms import LoginForm, RegisterForm, UploadForm, AvatarUploadForm, ForumPostForm, ForumCommentForm
+from Stellarhive.models import db, User, File, Reward, TaskLog, ForumCategory, ForumPost, ForumComment, ForumLike
+from Stellarhive.forms import LoginForm, RegisterForm, UploadForm, AvatarUploadForm, ForumPostForm, ForumCommentForm, CustomizeForm, EmptyForm
 from flask_wtf.csrf import CSRFProtect
 import os, json, datetime, random
 from io import BytesIO
 from werkzeug.exceptions import RequestEntityTooLarge
-from forms import EditProfileForm
+from Stellarhive.forms import EditProfileForm
 from functools import wraps
 from PIL import Image
 import uuid
+from flask_migrate import Migrate
+from datetime import timedelta
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -37,6 +39,8 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"  # type: ignore
+
+migrate = Migrate(app, db)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -71,11 +75,18 @@ def create_tables():
         # 创建默认论坛分类
         if ForumCategory.query.count() == 0:
             categories = [
-                {'name': '公告通知', 'description': '重要公告和通知'},
-                {'name': '技术讨论', 'description': '分享和讨论技术问题'},
-                {'name': '资源分享', 'description': '分享有价值的学习资源'},
-                {'name': '问题求助', 'description': '寻求帮助和解答'},
-                {'name': '闲聊灌水', 'description': '轻松话题讨论区'}
+                {'name': '前端', 'description': '前端开发相关'},
+                {'name': '后端', 'description': '后端开发相关'},
+                {'name': '移动开发', 'description': '移动端开发相关'},
+                {'name': '人工智能', 'description': 'AI与机器学习'},
+                {'name': '大数据', 'description': '大数据技术'},
+                {'name': '数据库', 'description': '数据库技术'},
+                {'name': '数据结构与算法', 'description': '数据结构与算法讨论'},
+                {'name': 'Python', 'description': 'Python相关'},
+                {'name': 'Java', 'description': 'Java相关'},
+                {'name': 'C', 'description': 'C语言相关'},
+                {'name': '云平台', 'description': '云计算与平台'},
+                {'name': '前沿技术', 'description': '最新前沿技术'}
             ]
             for category in categories:
                 db.session.add(ForumCategory(**category))
@@ -197,6 +208,7 @@ def download(file_id):
 @app.route('/rewards')
 @login_required
 def rewards():
+    form = EmptyForm()
     rewards = Reward.query.all()
     logs = TaskLog.query.filter_by(user_id=current_user.id).all()
     # 检查今日是否已签到
@@ -206,7 +218,7 @@ def rewards():
         task='sign_in',
         date=today
     ).first() is not None
-    return render_template('rewards.html', rewards=rewards, logs=logs, is_signed=is_signed)
+    return render_template('rewards.html', rewards=rewards, logs=logs, is_signed=is_signed, form=form)
 
 @app.route('/sign_in')
 @login_required
@@ -225,6 +237,7 @@ def sign_in():
 @app.route('/learn_blog_page', methods=['GET', 'POST'])
 @login_required
 def learn_blog_page():
+    form = EmptyForm()
     if request.method == 'POST':
         # 领取奖励
         current_user.score += 10
@@ -236,7 +249,7 @@ def learn_blog_page():
     with open(os.path.join(basedir, 'blog_links.json'), encoding='utf-8') as f:
         blogs = json.load(f)
         blog = random.choice(blogs)
-    return render_template('learn_blog.html', blog=blog)
+    return render_template('learn_blog.html', blog=blog, form=form)
 
 @app.route('/library')
 def library():
@@ -343,6 +356,7 @@ def library_batch_download():
 @app.route('/members', methods=['GET', 'POST'])
 @login_required
 def members():
+    form = EmptyForm()
     if request.method == 'POST' and current_user.role == 'admin':
         user_id = request.form.get('user_id')
         action = request.form.get('action')
@@ -356,7 +370,7 @@ def members():
             flash(f'已为 {user.username} {"加" if action=="add" else "减"}10分')
         return redirect(url_for('members'))
     users = User.query.all()
-    return render_template('members.html', users=users)
+    return render_template('members.html', users=users, form=form)
 
 @app.route('/profile/<int:user_id>')
 @login_required
@@ -533,6 +547,9 @@ def remove_avatar():
 def shop():
     return render_template('shop.html')
 
+# 头像框文件名列表
+FRAME_FILES = [f'头像框{i}.png' for i in range(1, 9)]
+
 @app.route('/exchange', methods=['POST'])
 @login_required
 @csrf_exempt
@@ -545,20 +562,190 @@ def exchange():
         return jsonify({'ok': False, 'msg': '积分不足！'})
     # 头像框
     if type_ == 'avatar_frame':
+        if value not in FRAME_FILES:
+            return jsonify({'ok': False, 'msg': '头像框不存在！'})
+        owned = (current_user.owned_frames or '').split(',') if current_user.owned_frames else []
+        if value in owned:
+            return jsonify({'ok': False, 'msg': '你已拥有该头像框！'})
         current_user.score -= cost
-        current_user.avatar_frame = value  # 你需要在User模型加avatar_frame字段
+        current_user.avatar_frame = value
+        owned.append(value)
+        current_user.owned_frames = ','.join([v for v in owned if v])
     # 昵称颜色
     elif type_ == 'nickname_color':
+        owned = (current_user.owned_colors or '').split('||') if current_user.owned_colors else []
+        if value in owned:
+            return jsonify({'ok': False, 'msg': '你已拥有该昵称颜色！'})
         current_user.score -= cost
-        current_user.nickname_color = value  # 你需要在User模型加nickname_color字段
+        current_user.nickname_color = value
+        owned.append(value)
+        current_user.owned_colors = '||'.join([v for v in owned if v])
     # 昵称字体
     elif type_ == 'nickname_font':
+        owned = (current_user.owned_fonts or '').split(',') if current_user.owned_fonts else []
+        if value in owned:
+            return jsonify({'ok': False, 'msg': '你已拥有该昵称字体！'})
         current_user.score -= cost
-        current_user.nickname_font = value  # 你需要在User模型加nickname_font字段
+        current_user.nickname_font = value
+        owned.append(value)
+        current_user.owned_fonts = ','.join([v for v in owned if v])
+    # 解锁自定义头像
+    elif type_ == 'unlock_avatar':
+        if current_user.avatar_enabled:
+            return jsonify({'ok': False, 'msg': '您已解锁自定义头像功能！'})
+        current_user.score -= cost
+        current_user.avatar_enabled = True
     else:
         return jsonify({'ok': False, 'msg': '类型错误'})
     db.session.commit()
     return jsonify({'ok': True})
+
+@app.route('/customize', methods=['GET', 'POST'])
+@login_required
+def customize():
+    user = current_user
+    font_list = ['Pacifico','Lobster','Indie Flower','ZCOOL KuaiLe','ZCOOL QingKe HuangYou','Ma Shan Zheng']
+    color_list = [
+        'linear-gradient(90deg, #ff6a00, #ee0979, #ff6a00)',
+        'linear-gradient(90deg, #43cea2, #185a9d)',
+        'linear-gradient(90deg, #ffaf7b, #d76d77, #3a1c71)',
+        'linear-gradient(90deg, #11998e, #38ef7d)',
+        'linear-gradient(90deg, #f7971e, #ffd200)',
+        'linear-gradient(90deg, #a18cd1, #fbc2eb)'
+    ]
+    frame_list = FRAME_FILES
+    owned_fonts = (user.owned_fonts or '').split(',') if user.owned_fonts else []
+    owned_colors = (user.owned_colors or '').split('||') if user.owned_colors else []
+    owned_frames = (user.owned_frames or '').split(',') if user.owned_frames else []
+    form = CustomizeForm()
+    form.font.choices = [(f, f) for f in font_list if f in owned_fonts]
+    form.color.choices = [(c, c) for c in color_list if c in owned_colors]
+    form.frame.choices = [(f, f) for f in frame_list if f in owned_frames]
+    if form.validate_on_submit():
+        if form.font.data and form.font.data in owned_fonts:
+            user.nickname_font = form.font.data
+        if form.color.data and form.color.data in owned_colors:
+            user.nickname_color = form.color.data
+        if form.frame.data and form.frame.data in owned_frames:
+            user.avatar_frame = form.frame.data
+        db.session.commit()
+        flash('装扮已保存！')
+        return redirect(url_for('profile', user_id=user.id))
+    # 设置默认选中项
+    form.font.data = user.nickname_font
+    form.color.data = user.nickname_color
+    form.frame.data = user.avatar_frame
+    return render_template('customize.html', user=user, form=form, font_list=font_list, color_list=color_list, frame_list=frame_list,
+                           owned_fonts=owned_fonts, owned_colors=owned_colors, owned_frames=owned_frames)
+
+@app.route('/forum/following')
+@login_required
+def forum_following():
+    users = current_user.followed.all()
+    form = EmptyForm()
+    return render_template('forum_following.html', users=users, form=form, User=User)
+
+@app.route('/forum/follow/<int:user_id>', methods=['POST'])
+@login_required
+def follow_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user != current_user and not current_user.followed.filter_by(id=user.id).first():
+        current_user.followed.append(user)
+        db.session.commit()
+        flash(f'已关注 {user.username}', 'success')
+    else:
+        flash('操作无效', 'warning')
+    return redirect(request.referrer or url_for('forum_following'))
+
+@app.route('/forum/unfollow/<int:user_id>', methods=['POST'])
+@login_required
+def unfollow_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user != current_user and current_user.followed.filter_by(id=user.id).first():
+        current_user.followed.remove(user)
+        db.session.commit()
+        flash(f'已取消关注 {user.username}', 'info')
+    else:
+        flash('操作无效', 'warning')
+    return redirect(request.referrer or url_for('forum_following'))
+
+@app.route('/forum/user/<int:user_id>')
+@login_required
+def forum_user_posts(user_id):
+    user = User.query.get_or_404(user_id)
+    posts = ForumPost.query.filter_by(author_id=user.id).order_by(ForumPost.created_time.desc()).all()
+    return render_template('forum_user_posts.html', user=user, posts=posts)
+
+@app.route('/forum/subscribe/<int:user_id>', methods=['POST'])
+@login_required
+def subscribe_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user != current_user and not current_user.subscribed.filter_by(id=user.id).first():
+        current_user.subscribed.append(user)
+        db.session.commit()
+        flash(f'已订阅 {user.username}', 'success')
+    else:
+        flash('操作无效', 'warning')
+    return redirect(request.referrer or url_for('forum_subscribed'))
+
+@app.route('/forum/unsubscribe/<int:user_id>', methods=['POST'])
+@login_required
+def unsubscribe_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user != current_user and current_user.subscribed.filter_by(id=user.id).first():
+        current_user.subscribed.remove(user)
+        db.session.commit()
+        flash(f'已取消订阅 {user.username}', 'info')
+    else:
+        flash('操作无效', 'warning')
+    return redirect(request.referrer or url_for('forum_subscribed'))
+
+@app.route('/forum/subscribed')
+@login_required
+def forum_subscribed():
+    users = current_user.subscribed.all()
+    posts = ForumPost.query.filter(ForumPost.author_id.in_([u.id for u in users])).order_by(ForumPost.created_time.desc()).all() if users else []
+    form = EmptyForm()
+    return render_template('forum_subscribed.html', users=users, posts=posts, form=form, User=User)
+
+@app.route('/forum/favorite/<int:post_id>', methods=['POST'])
+@login_required
+def favorite_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    if not current_user.favorite_posts.filter_by(id=post.id).first():
+        current_user.favorite_posts.append(post)
+        db.session.commit()
+        flash('已收藏该帖子', 'success')
+    else:
+        flash('你已收藏过该帖子', 'info')
+    return redirect(request.referrer or url_for('forum_favorites'))
+
+@app.route('/forum/unfavorite/<int:post_id>', methods=['POST'])
+@login_required
+def unfavorite_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    if current_user.favorite_posts.filter_by(id=post.id).first():
+        current_user.favorite_posts.remove(post)
+        db.session.commit()
+        flash('已取消收藏', 'info')
+    else:
+        flash('你未收藏该帖子', 'warning')
+    return redirect(request.referrer or url_for('forum_favorites'))
+
+@app.route('/forum/favorites')
+@login_required
+def forum_favorites():
+    posts = current_user.favorite_posts.order_by(ForumPost.created_time.desc()).all()
+    form = EmptyForm()
+    return render_template('forum_favorites.html', posts=posts, form=form)
+
+@app.route('/forum/history')
+@login_required
+def forum_history():
+    # 历史：展示用户浏览过的帖子（假设有User.history关系）
+    # 这里简单演示为展示所有帖子
+    posts = ForumPost.query.order_by(ForumPost.created_time.desc()).all()
+    return render_template('forum_history.html', posts=posts)
 
 @app.route('/forum')
 @login_required
@@ -566,34 +753,29 @@ def forum():
     categories = ForumCategory.query.all()
     page = request.args.get('page', 1, type=int)
     per_page = 20
-    
     # 获取筛选参数
     category_id = request.args.get('category_id', type=int)
-    sort_by = request.args.get('sort', 'newest')  # newest, popular, no_reply
-    
+    sort_by = request.args.get('sort', 'newest')
+    tag = request.args.get('tag')
     # 构建查询
     query = ForumPost.query
-    
-    # 如果指定了分类，则筛选
     if category_id:
         query = query.filter_by(category_id=category_id)
-    
-    # 排序
+    if tag:
+        query = query.filter(ForumPost.tags.like(f'%{tag}%'))
     if sort_by == 'popular':
         query = query.order_by(ForumPost.views.desc())
     elif sort_by == 'no_reply':
         query = query.outerjoin(ForumComment).group_by(ForumPost.id).having(db.func.count(ForumComment.id) == 0)
-    else:  # newest
+    else:
         query = query.order_by(ForumPost.created_time.desc())
-    
-    # 分页
     posts = query.paginate(page=page, per_page=per_page)
-    
     return render_template('forum.html', 
                          categories=categories, 
                          posts=posts,
                          current_category_id=category_id,
-                         sort_by=sort_by)
+                         sort_by=sort_by,
+                         tag=tag)
 
 @app.route('/forum/category/<int:category_id>')
 @login_required
@@ -609,11 +791,10 @@ def forum_category(category_id):
 def forum_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
     form = ForumCommentForm()
-    
+    delete_comment_form = EmptyForm()
     # 增加浏览量
     post.views += 1
     db.session.commit()
-    
     if form.validate_on_submit() and current_user.is_authenticated:
         comment = ForumComment()
         comment.content = form.content.data
@@ -623,9 +804,15 @@ def forum_post(post_id):
         db.session.commit()
         flash('评论发布成功！')
         return redirect(url_for('forum_post', post_id=post_id))
-        
     comments = post.comments.order_by(ForumComment.created_time.desc()).all()
-    return render_template('forum_post.html', post=post, form=form, comments=comments)
+    return render_template('forum_post.html', post=post, form=form, comments=comments, delete_comment_form=delete_comment_form)
+
+@app.route('/forum/new_post/<int:category_id>', methods=['GET'])
+@login_required
+def forum_new_post_form(category_id):
+    category = ForumCategory.query.get_or_404(category_id)
+    form = ForumPostForm()
+    return render_template('forum_new_post.html', form=form, category=category)
 
 @app.route('/forum/new_post/<int:category_id>', methods=['POST'])
 @login_required
@@ -633,47 +820,42 @@ def forum_new_post(category_id):
     if not current_user.is_authenticated:
         if request.headers.get('Accept') == 'application/json':
             return jsonify({'error': '请先登录后再发帖'}), 401
-        flash('请先登录后再发帖', 'warning')
+        flash('请先登录后发帖', 'warning')
         return redirect(url_for('login'))
-    
     # 检查Content-Type
     if request.headers.get('Content-Type') == 'application/json':
         data = request.get_json()
         title = data.get('title')
         content = data.get('content')
+        tags = ','.join(data.get('tags', []))
     else:
         title = request.form.get('title')
         content = request.form.get('content')
-    
+        tags = request.form.getlist('tags')
+        tags = ','.join(tags)
     if not title or not content:
         if request.headers.get('Accept') == 'application/json':
             return jsonify({'error': '标题和内容不能为空'}), 400
         flash('标题和内容不能为空', 'warning')
         return redirect(url_for('forum'))
-    
     try:
         category = ForumCategory.query.get_or_404(category_id)
-        
-        # 创建新帖子
         post = ForumPost()
         post.title = title
         post.content = content
         post.author_id = current_user.id
         post.category_id = category.id
-        
+        post.tags = tags
         db.session.add(post)
         db.session.commit()
-        
         if request.headers.get('Accept') == 'application/json':
             return jsonify({
                 'success': True,
                 'redirect': url_for('forum_post', post_id=post.id),
                 'message': '发帖成功！'
             })
-            
         flash('发帖成功！', 'success')
         return redirect(url_for('forum_post', post_id=post.id))
-        
     except Exception as e:
         db.session.rollback()
         if request.headers.get('Accept') == 'application/json':
@@ -681,47 +863,43 @@ def forum_new_post(category_id):
         flash('发帖失败，请重试', 'error')
         return redirect(url_for('forum'))
 
-@app.route('/forum/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@app.route('/forum/edit_post/<int:post_id>', methods=['GET', 'POST'], endpoint='forum_edit_post')
 @login_required
-def edit_post(post_id):
+def edit_forum_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
-    if post.author_id != current_user.id and current_user.role != 'admin':
-        flash('你没有权限编辑这个帖子', 'error')
+    if post.author_id != current_user.id:
+        flash('你没有权限编辑该帖子', 'danger')
         return redirect(url_for('forum_post', post_id=post_id))
-    
     form = ForumPostForm(obj=post)
     if form.validate_on_submit():
         post.title = form.title.data
         post.content = form.content.data
+        post.tags = ','.join(form.tags.data) if hasattr(form, 'tags') else ''
         db.session.commit()
         flash('帖子已更新', 'success')
         return redirect(url_for('forum_post', post_id=post_id))
-    
     return render_template('forum_edit_post.html', form=form, post=post)
 
 @app.route('/forum/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
-    if post.author_id != current_user.id and current_user.role != 'admin':
-        flash('你没有权限删除这个帖子', 'error')
+    if post.author_id != current_user.id:
+        flash('你没有权限删除该帖子', 'danger')
         return redirect(url_for('forum_post', post_id=post_id))
-    
-    category_id = post.category_id
     db.session.delete(post)
     db.session.commit()
     flash('帖子已删除', 'success')
-    return redirect(url_for('forum_category', category_id=category_id))
+    return redirect(url_for('forum'))
 
 @app.route('/forum/delete_comment/<int:comment_id>', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
     comment = ForumComment.query.get_or_404(comment_id)
-    if comment.author_id != current_user.id and current_user.role != 'admin':
-        flash('你没有权限删除这个评论', 'error')
-        return redirect(url_for('forum_post', post_id=comment.post_id))
-    
     post_id = comment.post_id
+    if current_user.id != comment.author_id and getattr(current_user, 'role', None) != 'admin':
+        flash('你没有权限删除该评论', 'danger')
+        return redirect(url_for('forum_post', post_id=post_id))
     db.session.delete(comment)
     db.session.commit()
     flash('评论已删除', 'success')
@@ -729,28 +907,36 @@ def delete_comment(comment_id):
 
 @app.route('/forum/like/<int:post_id>', methods=['POST'])
 @login_required
-@csrf_exempt
-def toggle_like(post_id):
-    if not current_user.is_authenticated:
-        return jsonify({'error': '请先登录'}), 401
-        
+def like_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
-    like = ForumLike.query.filter_by(user_id=current_user.id, post_id=post_id).first()
-    
+    # 检查是否已点赞
+    if ForumLike.query.filter_by(user_id=current_user.id, post_id=post.id).first():
+        flash('你已点赞过该帖子', 'info')
+    else:
+        like = ForumLike(user_id=current_user.id, post_id=post.id)
+        db.session.add(like)
+        db.session.commit()
+        flash('点赞成功', 'success')
+    return redirect(request.referrer or url_for('forum_post', post_id=post_id))
+
+@app.route('/forum/unlike/<int:post_id>', methods=['POST'])
+@login_required
+def unlike_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    like = ForumLike.query.filter_by(user_id=current_user.id, post_id=post.id).first()
     if like:
         db.session.delete(like)
-        action = 'unliked'
+        db.session.commit()
+        flash('已取消点赞', 'info')
     else:
-        like = ForumLike(user_id=current_user.id, post_id=post_id)
-        db.session.add(like)
-        action = 'liked'
-    
-    db.session.commit()
-    return jsonify({
-        'ok': True,
-        'action': action,
-        'likes': post.likes.count()
-    })
+        flash('你还没有点赞该帖子', 'warning')
+    return redirect(request.referrer or url_for('forum_post', post_id=post_id))
+
+@app.template_filter('tochina')
+def tochina(dt):
+    if dt is None:
+        return ''
+    return (dt + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M')
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True) 

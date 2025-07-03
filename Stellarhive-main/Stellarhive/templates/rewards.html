@@ -9,9 +9,12 @@
         <i class="fas fa-check-circle me-2"></i>今日已签到
       </button>
       {% else %}
-      <a class="btn btn-primary reward-btn sign-in-btn" href="/sign_in">
-        <i class="fas fa-calendar-check me-2"></i>每日签到
-      </a>
+      <form action="{{ url_for('sign_in') }}" method="post" style="display:inline;">
+        {{ form.csrf_token }}
+        <button type="submit" class="btn btn-primary reward-btn sign-in-btn">
+          <i class="fas fa-calendar-check me-2"></i>每日签到
+        </button>
+      </form>
       {% endif %}
       <a class="btn btn-info reward-btn learn-btn" href="/learn_blog_page">
         <i class="fas fa-book-reader me-2"></i>学习技术博客（+10分）
@@ -22,19 +25,12 @@
   <div class="d-flex flex-lg-row flex-column align-items-start" style="gap:2rem;">
     <div class="flex-grow-1" style="min-width:0;">
       <div class="reward-section mb-4">
-        <h4 class="section-title"><i class="fas fa-user-circle me-2"></i>自定义头像功能<span style="font-size:16px;color:#FFD700;text-shadow:0 0 6px #000;">（需要100积分解锁）</span></h4>
+        <h4 class="section-title"><i class="fas fa-store me-2"></i>兑换商店</h4>
         <div class="d-flex flex-column flex-md-row align-items-center gap-3">
-          {% if current_user.avatar_enabled %}
-            <div class="text-center">
-              <p class="text-success mb-2"><i class="fas fa-check-circle"></i> 您已解锁自定义头像功能！</p>
-              <a href="/upload_avatar" class="btn btn-primary">上传头像</a>
-            </div>
-          {% else %}
-            <div class="text-center">
-              <p class="text-muted mb-2">解锁后可上传自己的头像图片，系统会自动裁剪成圆形</p>
-              <button id="unlockAvatarBtn" class="btn btn-warning" style="font-weight:bold;box-shadow:0 0 8px #FFD700;">解锁自定义头像</button>
-            </div>
-          {% endif %}
+          <div class="text-center">
+            <p class="text-muted mb-2">解锁自定义头像和更多装扮请前往兑换商店</p>
+            <a href="/shop" class="btn btn-warning" style="font-weight:bold;box-shadow:0 0 8px #FFD700;">前往兑换商店</a>
+          </div>
         </div>
       </div>
       <div class="reward-record-bg mb-4">

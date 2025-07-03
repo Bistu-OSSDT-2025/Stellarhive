@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+  <div class="card p-4 mb-4" style="max-width:800px;margin:auto;">
+    <h2 class="mb-4 text-center">兑换商店</h2>
+    <h4 class="mb-3">头像框（50积分/个）</h4>
+    <div class="d-flex flex-wrap gap-3 mb-4">
+      {% for i in range(1,9) %}
+      <div class="text-center">
+        <div style="width:70px;height:70px;position:relative;margin:auto;">
+          <img src="/static/avatars/frames/头像框{{ i }}.png" alt="头像框{{ i }}" style="width:70px;height:70px;position:absolute;top:0;left:0;z-index:2;pointer-events:none;">
+        </div>
+        <button class="btn btn-outline-primary mt-2" onclick="exchange('avatar_frame', '头像框{{ i }}.png', 50)">兑换</button>
+      </div>
+      {% endfor %}
+    </div>
+    <h4 class="mb-3">昵称颜色（20积分/个）</h4>
+    <div class="d-flex flex-wrap gap-3 mb-4">
+      {% set gradients = [
+        'linear-gradient(90deg, #ff6a00, #ee0979, #ff6a00)',
+        'linear-gradient(90deg, #43cea2, #185a9d)',
+        'linear-gradient(90deg, #ffaf7b, #d76d77, #3a1c71)',
+        'linear-gradient(90deg, #11998e, #38ef7d)',
+        'linear-gradient(90deg, #f7971e, #ffd200)',
+        'linear-gradient(90deg, #a18cd1, #fbc2eb)'
+      ] %}
+      {% for g in gradients %}
+      <div class="text-center">
+        <span style="display:inline-block;width:90px;height:32px;line-height:32px;background:#f8f9fa;border-radius:8px;font-weight:bold;background:{{ g }};-webkit-background-clip:text;-webkit-text-fill-color:transparent;">示例昵称</span>
+        <button class="btn btn-outline-success mt-2" onclick="exchange('nickname_color', '{{ g }}', 20)">兑换</button>
+      </div>
+      {% endfor %}
+    </div>
+    <h4 class="mb-3">昵称字体（30积分/个）</h4>
+    <div class="d-flex flex-wrap gap-3 mb-4">
+      {% set fonts = [
+        ['Pacifico','Pacifico'],
+        ['Lobster','Lobster'],
+        ['Indie Flower','Indie Flower'],
+        ['ZCOOL KuaiLe','站酷快乐体'],
+        ['ZCOOL QingKe HuangYou','庆科黄油体'],
+        ['Ma Shan Zheng','马善政书法体']
+      ] %}
+      {% for f in fonts %}
+      <div class="text-center">
+        <span style="display:inline-block;width:110px;height:32px;line-height:32px;background:#f8f9fa;border-radius:8px;font-family:'{{ f[0] }}', 'sans-serif';font-size:20px;">{{ f[1] }}</span>
+        <button class="btn btn-outline-warning mt-2" onclick="exchange('nickname_font', '{{ f[0] }}', 30)">兑换</button>
+      </div>
+      {% endfor %}
+    </div>
+    <h4 class="mb-3">自定义头像（100积分）</h4>
+    <div class="d-flex flex-wrap gap-3 mb-4">
+      <div class="text-center">
+        {% if current_user.avatar_enabled %}
+          <div class="mb-2 text-success"><i class="fas fa-check-circle"></i> 已解锁</div>
+          <a href="/upload_avatar" class="btn btn-primary">上传头像</a>
+        {% else %}
+          <button class="btn btn-warning" onclick="exchange('unlock_avatar', '1', 100)">解锁自定义头像</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function exchange(type, value, cost) {
+  if(!confirm('确定消耗'+cost+'积分兑换该饰品吗？')) return;
+  fetch('/exchange', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:type, value:value, cost:cost})
+  }).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      alert('兑换成功！');
+      location.reload();
+    }else{
+      alert(d.msg);
+    }
+  });
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css?family=Pacifico|Lobster|Indie+Flower|ZCOOL+KuaiLe|ZCOOL+QingKe+HuangYou|Ma+Shan+Zheng&display=swap" rel="stylesheet">
+{% endblock %}

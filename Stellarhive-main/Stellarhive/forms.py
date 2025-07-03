@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, MultipleFileField, FileField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, MultipleFileField, FileField, TextAreaField, RadioField
 from wtforms.validators import DataRequired, Length, EqualTo
 
 class LoginForm(FlaskForm):
@@ -34,3 +34,12 @@ class ForumPostForm(FlaskForm):
 class ForumCommentForm(FlaskForm):
     content = TextAreaField('评论', validators=[DataRequired()])
     submit = SubmitField('提交')
+
+class CustomizeForm(FlaskForm):
+    font = RadioField('昵称字体')
+    color = RadioField('昵称颜色')
+    frame = RadioField('头像框')
+    submit = SubmitField('保存装扮')
+
+class EmptyForm(FlaskForm):
+    pass

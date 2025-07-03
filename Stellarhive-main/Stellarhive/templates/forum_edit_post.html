@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .form-control {
+        color: #212529 !important;
+    }
+</style>
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -17,7 +22,7 @@
         </div>
         <div class="card-body">
             <form method="post">
-                {{ form.csrf_token }}
+                {{ form.hidden_tag() }}
                 <div class="mb-3">
                     {{ form.title.label(class="form-label") }}
                     {{ form.title(class="form-control") }}
@@ -40,8 +45,14 @@
                     </div>
                     {% endif %}
                 </div>
-                {{ form.submit(class="btn btn-primary") }}
-                <a href="{{ url_for('forum_post', post_id=post.id) }}" class="btn btn-secondary">取消</a>
+                {% if form.tags %}
+                <div class="mb-3">
+                    {{ form.tags.label(class="form-label") }}
+                    {{ form.tags(class="form-control") }}
+                </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">保存修改</button>
+                <a href="{{ url_for('forum_post', post_id=post.id) }}" class="btn btn-secondary ms-2">取消</a>
             </form>
         </div>
     </div>

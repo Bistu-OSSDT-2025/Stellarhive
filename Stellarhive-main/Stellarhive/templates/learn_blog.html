@@ -9,6 +9,7 @@
 </div>
 <div id="timer" class="alert alert-info">请认真阅读，<span id="count">30</span>秒后可领取奖励</div>
 <form id="rewardForm" method="post" style="display:none;">
+  {{ form.csrf_token }}
   <button class="btn btn-success">领取奖励（+10分）</button>
 </form>
 <script>

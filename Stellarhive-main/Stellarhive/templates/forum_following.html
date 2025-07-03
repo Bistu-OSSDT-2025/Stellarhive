@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <h2>我关注的人</h2>
+  <div class="row">
+    {% for user in users %}
+      <div class="col-md-4 mb-3">
+        <div class="card p-3 d-flex flex-row align-items-center justify-content-between">
+          <div>
+            <a href="{{ url_for('forum_user_posts', user_id=user.id) }}" class="fw-bold text-primary">{{ user.username }}</a>
+          </div>
+          <form method="post" action="{{ url_for('unfollow_user', user_id=user.id) }}" style="margin:0;">
+            {{ form.csrf_token }}
+            <button type="submit" class="btn btn-sm btn-outline-danger">取消关注</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p>你还没有关注任何人。</p>
+    {% endfor %}
+  </div>
+  <hr>
+  <h4>发现更多用户：</h4>
+  <div class="row">
+    {% for user in User.query.filter(User.id != current_user.id).all() if user not in users %}
+      <div class="col-md-4 mb-3">
+        <div class="card p-3 d-flex flex-row align-items-center justify-content-between">
+          <div>
+            <a href="{{ url_for('forum_user_posts', user_id=user.id) }}" class="fw-bold text-primary">{{ user.username }}</a>
+          </div>
+          <form method="post" action="{{ url_for('follow_user', user_id=user.id) }}" style="margin:0;">
+            {{ form.csrf_token }}
+            <button type="submit" class="btn btn-sm btn-outline-primary">关注</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} 

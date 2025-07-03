@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5" style="max-width:600px;">
+  <div class="card p-4 mb-4">
+    <h2 class="mb-4 text-center">修改我的装扮</h2>
+    <form method="post">
+      {{ form.csrf_token }}
+      <div class="mb-4">
+        <label class="form-label"><b>昵称字体</b></label><br>
+        {% if form.font.choices %}
+          <div class="d-flex flex-wrap gap-3">
+            {% for subfield in form.font %}
+              <label style="font-family:'{{ subfield.data }}', 'sans-serif';font-size:20px;">
+                {{ subfield }} {{ subfield.data }}
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">你还没有兑换任何字体</div>
+        {% endif %}
+      </div>
+      <div class="mb-4">
+        <label class="form-label"><b>昵称颜色</b></label><br>
+        {% if form.color.choices %}
+          <div class="d-flex flex-wrap gap-3">
+            {% for subfield in form.color %}
+              <label style="font-weight:bold;background:{{ subfield.data }};-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                {{ subfield }} 渐变色
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">你还没有兑换任何昵称颜色</div>
+        {% endif %}
+      </div>
+      <div class="mb-4">
+        <label class="form-label"><b>头像框</b></label><br>
+        {% if form.frame.choices %}
+          <div class="d-flex flex-wrap gap-3">
+            {% for subfield in form.frame %}
+              <label style="display:inline-block;">
+                {{ subfield }}
+                <img src="/static/avatars/frames/{{ subfield.data }}" alt="头像框" style="width:40px;height:40px;border-radius:50%;margin-left:5px;vertical-align:middle;">
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">你还没有兑换任何头像框</div>
+        {% endif %}
+      </div>
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="/profile/{{ user.id }}" class="btn btn-secondary">返回个人主页</a>
+      </div>
+    </form>
+  </div>
+</div>
+<style>
+.card { border-radius: 15px; box-shadow: 0 4px 24px rgba(45,127,249,0.08); }
+</style>
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css?family=Pacifico|Lobster|Indie+Flower|ZCOOL+KuaiLe|ZCOOL+QingKe+HuangYou|Ma+Shan+Zheng&display=swap" rel="stylesheet">
+{% endblock %}
+{% endblock %} 

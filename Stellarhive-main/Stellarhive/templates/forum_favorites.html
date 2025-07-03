@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <h2>我的收藏</h2>
+  <div class="forum-post-list">
+    {% for post in posts %}
+      <div class="forum-post-card">
+        <a href="{{ url_for('forum_post', post_id=post.id) }}">
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.content[:100] }}...</p>
+          <div class="forum-post-meta">
+            <span>作者：{{ post.author.username }}</span>
+            <span>分类：{{ post.category.name }}</span>
+            <span>浏览：{{ post.views }}</span>
+            <span>评论：{{ post.comments.count() }}</span>
+            <span>时间：{{ post.created_time|tochina }}</span>
+          </div>
+        </a>
+        <form method="post" action="{{ url_for('unfavorite_post', post_id=post.id) }}" style="display:inline;">
+          {{ form.csrf_token }}
+          <button type="submit" class="btn btn-sm btn-outline-warning mt-2">取消收藏</button>
+        </form>
+      </div>
+    {% else %}
+      <p>暂无内容</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} 
