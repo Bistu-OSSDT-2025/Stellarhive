@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">成员列表</h2>
+<div class="container" style="max-width: 900px;">
+  <div class="card mb-4 p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <input type="text" class="form-control w-50" id="memberSearch" placeholder="搜索昵称、用户名或身份...">
+      <span class="text-muted ms-3">共 {{ users|length }} 人</span>
+    </div>
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <table class="table table-striped align-middle" id="memberTable">
+        <thead class="table-light">
+          <tr>
+            <th>头像</th>
+            <th>昵称</th>
+            <th>用户名</th>
+            <th>身份</th>
+            <th>积分</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+              <td>
+                <div style="position:relative;width:40px;height:40px;display:inline-block;">
+                  {% if user.avatar_filename %}
+                    <img src="/avatar/{{ user.avatar_filename }}" alt="头像" style="width:36px;height:36px;border-radius:50%;object-fit:cover;position:absolute;left:2px;top:2px;z-index:1;">
+                    {% if user.avatar_frame %}
+                      <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                    {% endif %}
+                  {% else %}
+                    <div style="width:36px;height:36px;border-radius:50%;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;position:absolute;left:2px;top:2px;z-index:1;">
+                      {{ user.username[0].upper() }}
+                    </div>
+                    {% if user.avatar_frame %}
+                      <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+              <td>{{ user.nickname or user.username }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.role }}</td>
+              <td>{{ user.score }}</td>
+              <td>
+                <a class="btn btn-info btn-sm" href="/profile/{{ user.id }}">查看主页</a>
+                {% if current_user.role == 'admin' %}
+                <form method="post" style="display:inline;">
+                  {{ form.csrf_token }}
+                  <input type="hidden" name="user_id" value="{{ user.id }}">
+                  <button class="btn btn-success btn-sm" name="action" value="add">+10分</button>
+                  <button class="btn btn-danger btn-sm" name="action" value="sub">-10分</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+const memberSearch = document.getElementById('memberSearch');
+memberSearch.addEventListener('input', function() {
+  const value = this.value.toLowerCase();
+  document.querySelectorAll('#memberTable tbody tr').forEach(row => {
+    const nickname = row.children[1].innerText.toLowerCase();
+    const username = row.children[2].innerText.toLowerCase();
+    const role = row.children[3].innerText.toLowerCase();
+    row.style.display = nickname.includes(value) || username.includes(value) || role.includes(value) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

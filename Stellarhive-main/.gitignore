@@ -1,0 +1,13 @@
+*.pyc
+__pycache__/
+instance/
+*.db
+venv/
+.env
+*.log
+.DS_Store
+uploads/
+avatars/
+*.exe
+*.apk
+*.pptx

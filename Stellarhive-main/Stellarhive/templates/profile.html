@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-4 mb-4" style="max-width:600px;margin:auto;">
+  <div class="text-center mb-4">
+    <div style="display:inline-block; position:relative; width:120px; height:120px; margin-bottom: 15px;">
+      {% if user.avatar_filename %}
+        <img src="/avatar/{{ user.avatar_filename }}" alt="用户头像" 
+             style="width:108px; height:108px; border-radius:50%; object-fit: cover; display:block; position:absolute; left:6px; top:6px; z-index:1;">
+        {% if user.avatar_frame %}
+          <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:120px;height:120px;z-index:2;pointer-events:none;">
+        {% endif %}
+      {% else %}
+        <div style="width:108px; height:108px; border-radius:50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); \
+                    display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold; position:absolute; left:6px; top:6px; z-index:1;">
+          {{ user.username[0].upper() }}
+        </div>
+        {% if user.avatar_frame %}
+          <img src="/static/avatars/frames/{{ user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:120px;height:120px;z-index:2;pointer-events:none;">
+        {% endif %}
+      {% endif %}
+    </div>
+    {% set is_gradient = user.nickname_color and 'linear-gradient' in user.nickname_color %}
+    <h2 class="mb-2"
+        style="font-family:{{ user.nickname_font }};
+        {% if is_gradient %}
+          background:{{ user.nickname_color }};
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+        {% else %}
+          color:{{ user.nickname_color }};
+        {% endif %}
+        ">
+      {{ user.nickname or user.username }} 的主页
+    </h2>
+    {% if current_user.id == user.id and user.avatar_enabled %}
+      <a href="/upload_avatar" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-camera"></i> 更换头像
+      </a>
+    {% endif %}
+  </div>
+  
+  <ul class="list-group mb-3">
+    <li class="list-group-item"><b>用户名：</b>{{ user.username }}</li>
+    <li class="list-group-item"><b>身份：</b>{{ user.role }}</li>
+    <li class="list-group-item"><b>积分：</b>{{ user.score }}</li>
+    <li class="list-group-item"><b>简介：</b>{{ user.bio or '暂无简介' }}</li>
+    {% if user.avatar_enabled %}
+      <li class="list-group-item text-success"><b>自定义头像：</b><i class="fas fa-check-circle"></i> 已解锁</li>
+    {% else %}
+      <li class="list-group-item text-muted"><b>自定义头像：</b><i class="fas fa-lock"></i> 未解锁（需要100积分）</li>
+    {% endif %}
+  </ul>
+  
+  {% if current_user.id == user.id %}
+    <div class="d-grid gap-2">
+      <a class="btn btn-primary" href="/edit_profile">编辑我的主页</a>
+      <a class="btn btn-success" href="/customize">修改我的装扮</a>
+      {% if not user.avatar_enabled %}
+        <a class="btn btn-warning" href="/rewards">前往奖励中心解锁头像功能</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<style>
+.card {
+  border-radius: 15px;
+  box-shadow: 0 4px 24px rgba(45,127,249,0.08);
+}
+
+.list-group-item {
+  border-radius: 8px;
+  margin-bottom: 5px;
+  border: 1px solid #e9ecef;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+</style>
+{% endblock %}

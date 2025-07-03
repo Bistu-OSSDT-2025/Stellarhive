@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>{{ user.username }} 的帖子</h2>
+  <div class="forum-post-list">
+    {% for post in posts %}
+      <div class="forum-post-card">
+        <a href="{{ url_for('forum_post', post_id=post.id) }}">
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.content[:100] }}...</p>
+          <div class="forum-post-meta">
+            <span>作者：{{ post.author.username }}</span>
+            <span>分类：{{ post.category.name }}</span>
+            <span>浏览：{{ post.views }}</span>
+            <span>评论：{{ post.comments.count() }}</span>
+            <span>时间：{{ post.created_time|tochina }}</span>
+          </div>
+        </a>
+      </div>
+    {% else %}
+      <p>暂无内容</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} 

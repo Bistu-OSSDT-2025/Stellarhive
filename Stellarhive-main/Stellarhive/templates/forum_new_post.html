@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="max-width:600px;margin:40px auto;">
+    <h2>发布新帖 - {{ category.name }}</h2>
+    <form method="post" action="{{ url_for('forum_new_post', category_id=category.id) }}">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            <label for="title" class="form-label">标题</label>
+            <input type="text" class="form-control" id="title" name="title" required maxlength="100">
+        </div>
+        <div class="mb-3">
+            <label for="tags" class="form-label">选择标签（可多选）</label>
+            <div id="tag-btn-group" class="tag-btn-group mb-2">
+                <button type="button" class="tag-btn" data-value="前端">前端</button>
+                <button type="button" class="tag-btn" data-value="后端">后端</button>
+                <button type="button" class="tag-btn" data-value="移动开发">移动开发</button>
+                <button type="button" class="tag-btn" data-value="人工智能">人工智能</button>
+                <button type="button" class="tag-btn" data-value="大数据">大数据</button>
+                <button type="button" class="tag-btn" data-value="数据库">数据库</button>
+                <button type="button" class="tag-btn" data-value="数据结构与算法">数据结构与算法</button>
+                <button type="button" class="tag-btn" data-value="Python">Python</button>
+                <button type="button" class="tag-btn" data-value="Java">Java</button>
+                <button type="button" class="tag-btn" data-value="C">C</button>
+                <button type="button" class="tag-btn" data-value="云平台">云平台</button>
+                <button type="button" class="tag-btn" data-value="前沿技术">前沿技术</button>
+            </div>
+            <select class="form-select d-none" id="tags" name="tags" multiple>
+                <option value="前端">前端</option>
+                <option value="后端">后端</option>
+                <option value="移动开发">移动开发</option>
+                <option value="人工智能">人工智能</option>
+                <option value="大数据">大数据</option>
+                <option value="数据库">数据库</option>
+                <option value="数据结构与算法">数据结构与算法</option>
+                <option value="Python">Python</option>
+                <option value="Java">Java</option>
+                <option value="C">C</option>
+                <option value="云平台">云平台</option>
+                <option value="前沿技术">前沿技术</option>
+            </select>
+            <div class="form-text">点击标签可多选，再次点击可取消</div>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">内容</label>
+            <textarea class="form-control" id="content" name="content" rows="8" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">发布</button>
+        <a href="{{ url_for('forum') }}" class="btn btn-secondary ms-2">取消</a>
+    </form>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tagBtns = document.querySelectorAll('.tag-btn');
+    const tagSelect = document.getElementById('tags');
+    tagBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            btn.classList.toggle('active');
+            const value = btn.getAttribute('data-value');
+            const option = Array.from(tagSelect.options).find(opt => opt.value === value);
+            if (btn.classList.contains('active')) {
+                option.selected = true;
+            } else {
+                option.selected = false;
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

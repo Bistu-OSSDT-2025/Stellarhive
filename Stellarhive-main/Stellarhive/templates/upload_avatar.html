@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+  <div class="card p-4 mb-4">
+    <h2 class="mb-3 text-center">上传自定义头像</h2>
+    
+    {% if current_user.avatar_filename %}
+    <div class="text-center mb-4">
+      <h5>当前头像：</h5>
+      <img src="/avatar/{{ current_user.avatar_filename }}" alt="当前头像" 
+           style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #007bff; object-fit: cover;">
+      <br><br>
+      <form method="POST" action="/remove_avatar" style="display: inline;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('确定要删除当前头像吗？')">
+          <i class="fas fa-trash"></i> 删除当前头像
+        </button>
+      </form>
+    </div>
+    {% endif %}
+    
+    <form method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        <label for="{{ form.avatar.id }}" class="form-label">选择头像图片：</label>
+        {{ form.avatar(class="form-control", accept="image/*") }}
+        <div class="form-text">
+          支持 JPG、PNG、GIF 等格式，建议选择正方形图片以获得最佳效果
+        </div>
+      </div>
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="/profile/{{ current_user.id }}" class="btn btn-secondary">返回个人主页</a>
+      </div>
+    </form>
+    
+    <div class="mt-4 p-3 bg-light rounded">
+      <h6><i class="fas fa-info-circle"></i> 头像功能说明：</h6>
+      <ul class="mb-0">
+        <li>上传的图片会自动裁剪成圆形</li>
+        <li>图片尺寸会自动调整为 200x200 像素</li>
+        <li>支持透明背景的图片</li>
+        <li>可以随时更换或删除头像</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+.card {
+  border-radius: 15px;
+  box-shadow: 0 4px 24px rgba(45,127,249,0.08);
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.form-control {
+  border-radius: 8px;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %} 

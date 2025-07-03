@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}{% endblock %} - Stellarhive</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Pacifico|Lobster|Indie+Flower|ZCOOL+KuaiLe|ZCOOL+QingKe+HuangYou|Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg glass-nav mb-4">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <div class="brand-icon">
+                    <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f41d.png" alt="logo" width="32" height="32" class="me-2">
+                </div>
+                <span class="brand-text">星蜂资源站</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-home"></i> 首页</a></li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="/forum"><i class="fas fa-comments"></i> 论坛</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/library"><i class="fas fa-book"></i> 资源库</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/myfiles"><i class="fas fa-folder"></i> 我的文件</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/members"><i class="fas fa-users"></i> 成员列表</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/rewards"><i class="fas fa-gift"></i> 奖励中心</a></li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="/library"><i class="fas fa-book"></i> 资源库</a></li>
+                    {% endif %}
+                </ul>
+                {% if current_user.is_authenticated %}
+                <div class="user-profile glass-card">
+                    <a href="/profile/{{ current_user.id }}" class="d-flex align-items-center text-decoration-none">
+                        <div style="display:inline-block; position:relative; width:40px; height:40px; margin-right:10px;">
+                          {% if current_user.avatar_filename %}
+                            <img id="navbar-avatar" src="/avatar/{{ current_user.avatar_filename }}?t={{ range(100000)|random }}" alt="头像" width="34" height="34" style="border-radius:50%;object-fit:cover;display:block;position:absolute;left:3px;top:3px;width:34px;height:34px;z-index:1;">
+                            {% if current_user.avatar_frame %}
+                              <img src="/static/avatars/frames/{{ current_user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                            {% endif %}
+                          {% else %}
+                            <i class="fas fa-user-circle fa-2x" style="width:34px;height:34px;line-height:34px;display:inline-block;color:#94a3b8;position:absolute;left:3px;top:3px;z-index:1;"></i>
+                            {% if current_user.avatar_frame %}
+                              <img src="/static/avatars/frames/{{ current_user.avatar_frame }}" alt="头像框" style="position:absolute;left:0;top:0;width:40px;height:40px;z-index:2;pointer-events:none;">
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                        <div class="user-info">
+                            {% set is_gradient = current_user.nickname_color and 'linear-gradient' in current_user.nickname_color %}
+                            <div class="username"
+                                 style="font-family:{{ current_user.nickname_font }};
+                                   {% if is_gradient %}
+                                     background:{{ current_user.nickname_color }};
+                                     -webkit-background-clip:text;
+                                     -webkit-text-fill-color:transparent;
+                                   {% else %}
+                                     color:{{ current_user.nickname_color }};
+                                   {% endif %}
+                                 ">
+                              {{ current_user.nickname or current_user.username }}
+                            </div>
+                            <div class="user-score"><i class="fas fa-star"></i> <span id="user-score">{{ current_user.score }}</span></div>
+                        </div>
+                    </a>
+                    <a href="/logout" class="logout-btn ms-3"><i class="fas fa-sign-out-alt"></i></a>
+                </div>
+                {% else %}
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="/login"><i class="fas fa-sign-in-alt"></i> 登录</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/register"><i class="fas fa-user-plus"></i> 注册</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash 消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- 主要内容 -->
+    <div class="container main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.0/gsap.min.js"></script>
+    <!-- 页面动画 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        gsap.from('.navbar', {duration: 1, y: -100, opacity: 0, ease: 'power3.out'});
+        gsap.from('.main-content', {duration: 1, y: 50, opacity: 0, delay: 0.3, ease: 'power3.out'});
+        
+        // 导航链接悬停效果
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                gsap.to(link, {duration: 0.3, scale: 1.05, ease: 'power2.out'});
+            });
+            link.addEventListener('mouseleave', () => {
+                gsap.to(link, {duration: 0.3, scale: 1, ease: 'power2.out'});
+            });
+        });
+        // Flash自动消失
+        setTimeout(function() {
+            document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
+                // Bootstrap 5 fade out
+                alert.classList.remove('show');
+                alert.classList.add('fade');
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            });
+        }, 3000);
+    });
+    </script>
+    <!-- 自定义 JavaScript -->
+    {% block extra_js %}{% endblock %}
+
+    <style>
+    .avatar-small {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+
+    .navbar {
+        box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+
+    .dropdown-menu {
+        box-shadow: 0 2px 8px rgba(0,0,0,.1);
+        border: none;
+        border-radius: 8px;
+    }
+
+    .alert {
+        margin-bottom: 0;
+        border: none;
+    }
+
+    .alert-success {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .alert-warning {
+        background-color: #fef9c3;
+        color: #854d0e;
+    }
+
+    .alert-danger {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .alert-info {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    </style>
+</body>
+</html> 

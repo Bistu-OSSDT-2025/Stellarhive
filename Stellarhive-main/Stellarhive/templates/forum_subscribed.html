@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <h2>我订阅的人</h2>
+  <div class="row">
+    {% for user in users %}
+      <div class="col-md-4 mb-3">
+        <div class="card p-3 d-flex flex-row align-items-center justify-content-between">
+          <div>
+            <a href="{{ url_for('forum_user_posts', user_id=user.id) }}" class="fw-bold text-primary">{{ user.username }}</a>
+          </div>
+          <form method="post" action="{{ url_for('unsubscribe_user', user_id=user.id) }}" style="margin:0;">
+            {{ form.csrf_token }}
+            <button type="submit" class="btn btn-sm btn-outline-danger">取消订阅</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p>你还没有订阅任何人。</p>
+    {% endfor %}
+  </div>
+  <hr>
+  <h4>发现更多用户：</h4>
+  <div class="row">
+    {% for user in User.query.filter(User.id != current_user.id).all() if user not in users %}
+      <div class="col-md-4 mb-3">
+        <div class="card p-3 d-flex flex-row align-items-center justify-content-between">
+          <div>
+            <a href="{{ url_for('forum_user_posts', user_id=user.id) }}" class="fw-bold text-primary">{{ user.username }}</a>
+          </div>
+          <form method="post" action="{{ url_for('subscribe_user', user_id=user.id) }}" style="margin:0;">
+            {{ form.csrf_token }}
+            <button type="submit" class="btn btn-sm btn-outline-primary">订阅</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <hr>
+  <h2>订阅用户的帖子</h2>
+  <div class="forum-post-list">
+    {% for post in posts %}
+      <div class="forum-post-card">
+        <a href="{{ url_for('forum_post', post_id=post.id) }}">
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.content[:100] }}...</p>
+          <div class="forum-post-meta">
+            <span>作者：{{ post.author.username }}</span>
+            <span>分类：{{ post.category.name }}</span>
+            <span>浏览：{{ post.views }}</span>
+            <span>评论：{{ post.comments.count() }}</span>
+            <span>时间：{{ post.created_time|tochina }}</span>
+          </div>
+        </a>
+      </div>
+    {% else %}
+      <p>暂无内容</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-control {
+        color: #212529 !important;
+    }
+</style>
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('forum') }}">论坛</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('forum_category', category_id=post.category.id) }}">{{ post.category.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('forum_post', post_id=post.id) }}">{{ post.title }}</a></li>
+            <li class="breadcrumb-item active">编辑帖子</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="h3 mb-0">编辑帖子</h1>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.title.label(class="form-label") }}
+                    {{ form.title(class="form-control") }}
+                    {% if form.title.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.title.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.content.label(class="form-label") }}
+                    {{ form.content(class="form-control", rows="10") }}
+                    {% if form.content.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.content.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% if form.tags %}
+                <div class="mb-3">
+                    {{ form.tags.label(class="form-label") }}
+                    {{ form.tags(class="form-control") }}
+                </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">保存修改</button>
+                <a href="{{ url_for('forum_post', post_id=post.id) }}" class="btn btn-secondary ms-2">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

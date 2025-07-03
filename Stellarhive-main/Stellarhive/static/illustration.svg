@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" rx="40" fill="#e0e7ff"/>
+  <g>
+    <rect x="180" y="120" width="440" height="320" rx="24" fill="#fff" stroke="#2d7ff9" stroke-width="4"/>
+    <rect x="220" y="170" width="360" height="40" rx="8" fill="#e0e7ff"/>
+    <rect x="220" y="230" width="260" height="30" rx="6" fill="#fbbf24"/>
+    <rect x="220" y="280" width="180" height="30" rx="6" fill="#e0e7ff"/>
+    <rect x="220" y="330" width="120" height="30" rx="6" fill="#2d7ff9" fill-opacity="0.2"/>
+    <circle cx="600" cy="340" r="28" fill="#2d7ff9" fill-opacity="0.15"/>
+    <circle cx="600" cy="340" r="16" fill="#2d7ff9" fill-opacity="0.3"/>
+    <rect x="260" y="390" width="280" height="16" rx="8" fill="#e0e7ff"/>
+    <rect x="220" y="390" width="24" height="16" rx="8" fill="#2d7ff9"/>
+    <rect x="560" y="390" width="24" height="16" rx="8" fill="#fbbf24"/>
+    <text x="400" y="155" text-anchor="middle" font-size="28" fill="#2d7ff9" font-family="Segoe UI,Arial,sans-serif">Stellarhive</text>
+    <text x="400" y="205" text-anchor="middle" font-size="18" fill="#888" font-family="Segoe UI,Arial,sans-serif">知识 · 分享 · 激励</text>
+    <text x="400" y="250" text-anchor="middle" font-size="16" fill="#fff" font-family="Segoe UI,Arial,sans-serif">上传文件，收获奖励</text>
+    <text x="400" y="300" text-anchor="middle" font-size="16" fill="#2d7ff9" font-family="Segoe UI,Arial,sans-serif">技术文章推荐</text>
+    <text x="400" y="350" text-anchor="middle" font-size="16" fill="#2d7ff9" font-family="Segoe UI,Arial,sans-serif">积分兑换好物</text>
+  </g>
+  <g>
+    <circle cx="120" cy="520" r="32" fill="#fbbf24" fill-opacity="0.15"/>
+    <circle cx="700" cy="80" r="24" fill="#2d7ff9" fill-opacity="0.12"/>
+  </g>
+</svg> 
